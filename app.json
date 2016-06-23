@@ -1,0 +1,33 @@
+{
+  "name": "Recurring Maintenance Windows",
+  "description": "Create recurring maintenance windows within PagerDuty",
+  "repository": "https://github.com/lfepp/recurring-maintenance-windows",
+  "keywords": [
+    "pagerduty"
+  ],
+  "env": {
+    "REQUESTER_EMAIL": {
+      "description": "Email address for the PagerDuty user you would like to label as the requester for creating these maintenance windows"
+    },
+    "INTERVAL": {
+      "description": "Interval between maintenance windows in seconds"
+    },
+    "DURATION": {
+      "description": "Duration of maintenance windows"
+    },
+    "START_TIME": {
+      "description": "Starting date/time to create the first maintenance window in ISO 8601 format"
+    },
+    "SERVICES": {
+      "description": "A comma separated list of PagerDuty services you would like to schedule for recurring maintenance windows"
+    },
+    "DESCRIPTION": {
+      "description": "A description to be included on each maintenance window"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ]
+}
