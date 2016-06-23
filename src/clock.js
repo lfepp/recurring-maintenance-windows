@@ -2,10 +2,12 @@
 
 import {CronJob} from 'cron';
 
+import {createWindows} from 'worker';
+
 new CronJob({
   cronTime: "0 * * * * *", // Run once per hour
   onTick: () => {
-    console.log('Running cron job');
+    createWindows();
   },
   start: true,
   timeZone: "America/Los_Angeles"
