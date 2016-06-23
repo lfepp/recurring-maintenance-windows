@@ -32,5 +32,8 @@
       "es2015",
       "react"
     ]
+  },
+  "dependencies": {
+    "cron": "1.1.0"
   }
 }
