@@ -1,6 +1,6 @@
 'use strict';
 
 import chai from 'chai';
-import chaiHttp from 'chai-http';
+import like from 'chai-like';
 
-chai.use(chaiHttp);
+chai.use(like);

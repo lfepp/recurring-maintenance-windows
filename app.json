@@ -23,6 +23,9 @@
     },
     "DESCRIPTION": {
       "description": "A description to be included on each maintenance window"
+    },
+    "ACCESS_TOKEN": {
+      "description": "A valid PagerDuty v2 API access token"
     }
   },
   "buildpacks": [

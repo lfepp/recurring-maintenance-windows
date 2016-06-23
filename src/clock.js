@@ -11,4 +11,4 @@ new CronJob({
   },
   start: true,
   timeZone: "America/Los_Angeles"
-})
+});
