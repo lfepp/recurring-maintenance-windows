@@ -1,6 +1,7 @@
 'use strict';
 
-import request from 'request';
+// import request from 'request';
+import rp from 'request-promise';
 
 export default function createWindows() {
   const email = process.env.REQUESTER_EMAIL;
@@ -30,17 +31,13 @@ export function getFutureWindows(services, apiKey) {
     json: true
   };
 
-  request(options, (response) => {
-    if(response.statusCode == 200) {
-      return response.body;
-    }
-    else if(response.statusCode == 429 || response.statusCode == 408 || response.statusCode == 500) {
-      setTimeout(getFutureWindows(services, apiKey), 60000); // Retry in one minute
-    }
-    else {
-      throw new Error(response.body);
-    }
-  });
+  return rp(options)
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      throw new Error(error);
+    });
 }
 
 function dedupeWindows() {
