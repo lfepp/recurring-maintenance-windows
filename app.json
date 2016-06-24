@@ -13,7 +13,7 @@
       "description": "Interval between maintenance windows in seconds"
     },
     "DURATION": {
-      "description": "Duration of maintenance windows"
+      "description": "Duration of maintenance windows in seconds"
     },
     "START_TIME": {
       "description": "Starting date/time to create the first maintenance window in ISO 8601 format"

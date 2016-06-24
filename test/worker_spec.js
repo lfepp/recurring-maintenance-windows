@@ -4,16 +4,15 @@ import {expect} from 'chai';
 
 import {createWindows,getFutureWindows} from '../src/worker';
 
-// Test variables from pdt-lucas
-const apiKey = 'dzvCnBwGZA3_BsB-BALU';
-const servicesStr = 'P1FYDYU,PK2X17C';
-const services = ['P1FYDYU','PK2X17C'];
-
 describe('worker logic', () => {
 
   describe('getFutureWindows', () => {
 
     it('makes a successful request to PagerDuty\'s REST API for future maintenance windows', () => {
+      // Test variables from pdt-lucas
+      const apiKey = 'dzvCnBwGZA3_BsB-BALU';
+      const servicesStr = 'P1FYDYU,PK2X17C';
+      const services = ['P1FYDYU','PK2X17C'];
       return expect(getFutureWindows(services, apiKey)).to.eventually.like({
         "maintenance_windows": [
           {
@@ -91,9 +90,5 @@ describe('worker logic', () => {
     it('makes a request with invalid parameters to PagerDuty\'s REST API for future maintenance windows', () => {
       return expect(getFutureWindows(servicesStr, apiKey)).to.be.rejectedWith(Error);
     });
-  });
-
-  describe('createWindows', () => {
-
   });
 });

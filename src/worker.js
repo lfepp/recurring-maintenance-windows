@@ -1,6 +1,5 @@
 'use strict';
 
-// import request from 'request';
 import rp from 'request-promise';
 
 export default function createWindows() {
@@ -16,6 +15,8 @@ export default function createWindows() {
   currentWindows = getFutureWindows(services, apiKey);
 }
 
+// Function to get future maintenance windows
+// TODO handle pagination
 export function getFutureWindows(services, apiKey) {
   const options = {
     url: 'https://api.pagerduty.com/maintenance_windows',
@@ -38,6 +39,28 @@ export function getFutureWindows(services, apiKey) {
     .catch((error) => {
       throw new Error(error);
     });
+}
+
+// Function to queue 20 maintenance windows
+export function queueWindows(services, start_time, interval, duration, description) {
+  let queue = [];
+  let end_time = Date.parse(start_time);
+  if(isNaN(end_time)) {
+    throw new Error("Invalid START_TIME date format. Please use ISO 8601 format.");
+  }
+  end_time = end_time + (duration * 1000);
+  for(let i=0; i<20; i++) {
+    queue[i] = {
+      "maintenance_window": {
+        "start_time": start_time,
+        "end_time": end_time.toISOString(),
+        "description": description,
+        "services": services,
+        "type": "maintenance_window"
+      }
+    }
+  }
+  return queue;
 }
 
 function dedupeWindows() {
