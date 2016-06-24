@@ -6,7 +6,7 @@ export default function createWindows() {
   const email = process.env.REQUESTER_EMAIL;
   const interval = process.env.INTERVAL;
   const duration = process.env.DURATION;
-  const start_time = process.env.START_TIME;
+  const startTime = process.env.START_TIME;
   const description = process.env.DESCRIPTION;
   const apiKey = process.env.ACCESS_TOKEN;
   const servicesStr = process.env.SERVICES;
@@ -42,23 +42,25 @@ export function getFutureWindows(services, apiKey) {
 }
 
 // Function to queue 20 maintenance windows
-export function queueWindows(services, start_time, interval, duration, description) {
+export function queueWindows(services, startTime, interval, duration, description) {
   let queue = [];
-  let end_time = Date.parse(start_time);
-  if(isNaN(end_time)) {
-    throw new Error("Invalid START_TIME date format. Please use ISO 8601 format.");
-  }
-  end_time = end_time + (duration * 1000);
   for(let i=0; i<20; i++) {
+    let endTime = Date.parse(startTime);
+    if(isNaN(endTime)) {
+      throw new Error('Invalid START_TIME date format. Please use ISO 8601 format.');
+    }
+    endTime = endTime + duration * 1000;
+    endTime = new Date(endTime).toISOString();
     queue[i] = {
-      "maintenance_window": {
-        "start_time": start_time,
-        "end_time": end_time.toISOString(),
-        "description": description,
-        "services": services,
-        "type": "maintenance_window"
+      maintenance_window: {
+        start_time: startTime,
+        end_time: endTime,
+        description: description,
+        services: services,
+        type: 'maintenance_window'
       }
     }
+    startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
   return queue;
 }
