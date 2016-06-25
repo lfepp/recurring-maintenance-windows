@@ -2,7 +2,7 @@
 
 import {expect} from 'chai';
 
-import {createWindows, getFutureWindows, queueWindows} from '../src/core';
+import {createWindows, getFutureWindows, queueWindows, dedupeWindows} from '../src/core';
 
 describe('core application logic =>', () => {
 
@@ -367,6 +367,105 @@ describe('core application logic =>', () => {
         queueWindows(state.services, state.startTime, state.interval, state.duration, state.description);
       }
       return expect(nextState).to.throw(Error);
+    });
+  });
+
+  describe('dedupeWindows =>', () => {
+
+    it('de-duplicates two arrays with maintenance windows', () => {
+      const state = {
+        arr1: [
+          {
+            "maintenance_window": {
+              "start_time": "2020-01-01T00:00:00-0700",
+              "end_time": "2020-01-01T09:00:00.000Z",
+              "description": "This is a recurring maintenance window",
+              "services": [
+                "P1FYDYU",
+                "PK2X17C"
+              ],
+              "type": "maintenance_window"
+            }
+          },
+          {
+            "maintenance_window": {
+              "start_time": "2020-01-08T07:00:00.000Z",
+              "end_time": "2020-01-08T09:00:00.000Z",
+              "description": "This is a recurring maintenance window",
+              "services": [
+                "P1FYDYU",
+                "PK2X17C"
+              ],
+              "type": "maintenance_window"
+            }
+          },
+          {
+            "maintenance_window": {
+              "start_time": "2020-01-15T07:00:00.000Z",
+              "end_time": "2020-01-15T09:00:00.000Z",
+              "description": "This is a recurring maintenance window",
+              "services": [
+                "P1FYDYU",
+                "PK2X17C"
+              ],
+              "type": "maintenance_window"
+            }
+          }
+        ],
+        arr2: [
+          {
+            "maintenance_window": {
+              "start_time": "2020-01-08T07:00:00.000Z",
+              "end_time": "2020-01-08T09:00:00.000Z",
+              "description": "This is a recurring maintenance window",
+              "services": [
+                "P1FYDYU",
+                "PK2X17C"
+              ],
+              "type": "maintenance_window"
+            }
+          },
+          {
+            "maintenance_window": {
+              "start_time": "2030-06-14T07:00:00.000Z",
+              "end_time": "2030-01-12T09:00:00.000Z",
+              "description": "This is a recurring maintenance window",
+              "services": [
+                "P1FYDYU",
+                "PK2X17D"
+              ],
+              "type": "maintenance_window"
+            }
+          }
+        ]
+      }
+      const nextState = dedupeWindows(state.arr2, state.arr1);
+      expect(nextState).to.deep.equal([
+        {
+          "maintenance_window": {
+            "start_time": "2020-01-01T00:00:00-0700",
+            "end_time": "2020-01-01T09:00:00.000Z",
+            "description": "This is a recurring maintenance window",
+            "services": [
+              "P1FYDYU",
+              "PK2X17C"
+            ],
+            "type": "maintenance_window"
+          }
+        },
+        {
+          "maintenance_window": {
+            "start_time": "2020-01-15T07:00:00.000Z",
+            "end_time": "2020-01-15T09:00:00.000Z",
+            "description": "This is a recurring maintenance window",
+            "services": [
+              "P1FYDYU",
+              "PK2X17C"
+            ],
+            "type": "maintenance_window"
+          }
+        }
+      ]);
     });
   });
 });

@@ -16,7 +16,7 @@ export default function createWindows() {
 }
 
 // Function to get future maintenance windows
-// TODO handle pagination
+// TODO handle pagination - is this needed? could probably just assume there's enough in those cases
 export function getFutureWindows(services, apiKey) {
   const options = {
     url: 'https://api.pagerduty.com/maintenance_windows',
@@ -65,6 +65,16 @@ export function queueWindows(services, startTime, interval, duration, descriptio
   return queue;
 }
 
-function dedupeWindows() {
-
+// Function to de-dupe between the current windows in PagerDuty and the 20 queued windows
+// TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
+// TODO add error handling for overlapping windows
+export function dedupeWindows(currentWindows, queuedWindows) {
+  for(let qw of queuedWindows) {
+    for(let cw of currentWindows) {
+      if(qw.maintenance_window.start_time == cw.maintenance_window.start_time && qw.maintenance_window.end_time == cw.maintenance_window.end_time) {
+        queuedWindows.splice(queuedWindows.indexOf(qw), 1);
+      }
+    }
+  }
+  return queuedWindows;
 }
