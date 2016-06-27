@@ -13,3 +13,6 @@ coverage
 
 # vendor modules
 node_modules
+
+# config files
+test/test_config.js

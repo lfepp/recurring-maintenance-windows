@@ -2,19 +2,6 @@
 
 import rp from 'request-promise';
 
-export default function createWindows() {
-  const email = process.env.REQUESTER_EMAIL;
-  const interval = process.env.INTERVAL;
-  const duration = process.env.DURATION;
-  const startTime = process.env.START_TIME;
-  const description = process.env.DESCRIPTION;
-  const apiKey = process.env.ACCESS_TOKEN;
-  const servicesStr = process.env.SERVICES;
-  const services = servicesStr.replace(/\s/g, '').split(',');
-
-  currentWindows = getFutureWindows(services, apiKey);
-}
-
 // Function to get future maintenance windows
 // TODO handle pagination - is this needed? could probably just assume there's enough in those cases
 export function getFutureWindows(services, apiKey) {
@@ -67,7 +54,7 @@ export function queueWindows(services, startTime, interval, duration, descriptio
 
 // Function to de-dupe between the current windows in PagerDuty and the 20 queued windows
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
-// TODO add error handling for overlapping windows
+// TODO add error handling for partially-overlapping windows
 export function dedupeWindows(currentWindows, queuedWindows) {
   for(let qw of queuedWindows) {
     for(let cw of currentWindows) {
@@ -77,4 +64,28 @@ export function dedupeWindows(currentWindows, queuedWindows) {
     }
   }
   return queuedWindows;
+}
+
+export function createWindows(windows, apiKey, email) {
+  for(let mw of windows) {
+    const options = {
+      url: 'https://api.pagerduty.com/maintenance_windows',
+      method: 'POST',
+      headers: {
+        'Accept': 'application/vnd.pagerduty+json;version=2',
+        'Authorization': 'Token token=' + apiKey,
+        'From': email
+      },
+      body: mw,
+      json: true
+    };
+
+    return rp(options)
+      .then((response) => {
+        return response;
+      })
+      .catch((error) => {
+        throw new Error(error);
+      });
+  }
 }
