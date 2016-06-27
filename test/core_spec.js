@@ -3,7 +3,7 @@
 import {expect} from 'chai';
 import {accessToken} from './test_config';
 
-import {getFutureWindows, queueWindows, dedupeWindows, createWindows} from '../src/core';
+import {getFutureWindows, queueWindows, dedupeWindows, createWindows, removeAllFutureWindows} from '../src/core';
 
 describe('core application logic =>', () => {
 
@@ -94,9 +94,9 @@ describe('core application logic =>', () => {
     it('makes a request with invalid parameters to PagerDuty\'s REST API for future maintenance windows', () => {
       const state = {
         apiKey: accessToken,
-        servicesStr: 'P1FYDYU,PK2X17C'
+        services: 'P1FY4YU,PT2X17C'
       }
-      const nextState = getFutureWindows(state.servicesStr, state.apiKey);
+      const nextState = getFutureWindows(state.services, state.apiKey);
       return expect(nextState).to.be.rejectedWith(Error);
     });
   });
@@ -467,6 +467,19 @@ describe('core application logic =>', () => {
           }
         }
       ]);
+    });
+  });
+
+  // TODO improve tests for this logic
+  describe('removeAllFutureWindows =>', () => {
+
+    it('removes all future maintenance windows', () => {
+      const state = {
+        services: ['P1FYDYU','PK2X17C'],
+        apiKey: accessToken
+      };
+      const nextState = removeAllFutureWindows(state.services, state.apiKey);
+      return expect(nextState).to.eventually.equal(204);
     });
   });
 });

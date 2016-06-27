@@ -3,25 +3,20 @@
 import rp from 'request-promise';
 
 // Function to get future maintenance windows
-// TODO handle pagination - is this needed? could probably just assume there's enough in those cases
+// TODO handle pagination
 export function getFutureWindows(services, apiKey) {
   const options = {
-    url: 'https://api.pagerduty.com/maintenance_windows',
+    url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()),
     method: 'GET',
     headers: {
       'Accept': 'application/vnd.pagerduty+json;version=2',
       'Authorization': 'Token token=' + apiKey
-    },
-    body: {
-      'service_ids': services,
-      'filter': 'future'
-    },
-    json: true
+    }
   };
 
   return rp(options)
     .then((response) => {
-      return response;
+      return JSON.parse(response).maintenance_windows;
     })
     .catch((error) => {
       throw new Error(error);
@@ -82,10 +77,58 @@ export function createWindows(windows, apiKey, email) {
 
     return rp(options)
       .then((response) => {
-        return response;
+        console.dir(response['maintenance_windows']);
+        return response['maintenance_windows'];
       })
       .catch((error) => {
         throw new Error(error);
       });
   }
+}
+
+function deleteWindow(windowId, apiKey) {
+  const options = {
+    url: 'https://api.pagerduty.com/maintenance_windows/' + windowId,
+    method: 'DELETE',
+    headers: {
+      'Accept': 'application/vnd.pagerduty+json;version=2',
+      'Authorization': 'Token token=' + apiKey
+    }
+  };
+
+  return rp(options)
+    .then((response) => {
+      return response;
+    })
+    .catch((error) => {
+      throw new Error(error);
+    });
+}
+
+// TODO handle pagination
+// TODO add better error handling
+export function removeAllFutureWindows(services, apiKey) {
+  let counter = 0;
+  return getFutureWindows(services, apiKey)
+    .then((result) => {
+      function loop(services, apiKey, counter) {
+        if(counter >= services.length) {
+          return 204;
+        }
+        else {
+        return deleteWindow(services[counter].id, apiKey)
+          .then((response) => {
+            counter++;
+            return loop(services, apiKey, counter);
+          })
+          .catch((error) => {
+            throw new Error(error);
+          })
+        }
+      }
+      return loop(result, apiKey, counter);
+    })
+    .catch((error) => {
+      throw new Error(error);
+    });
 }
