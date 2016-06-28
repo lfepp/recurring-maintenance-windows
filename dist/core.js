@@ -71150,5 +71150,9 @@ function initialize() {
   });
 }
 
+// Immediately invoke initialize
+// FIXME do this without breaking tests
+initialize();
+
 }).call(this,require('_process'))
 },{"_process":218,"request-promise":254}]},{},[503]);
