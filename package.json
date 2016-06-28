@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --compilers js:babel-core/register --recursive",
-    "start": "./node_modules/.bin/babel src/core.js -o src/compiled_core.js && node index.js"
+    "dev": "./node_modules/.bin/babel src/core.js -o src/compiled_core.js && node index.js"
   },
   "repository": {
     "type": "git",
