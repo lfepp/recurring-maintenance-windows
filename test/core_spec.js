@@ -3,7 +3,7 @@
 import {expect} from 'chai';
 import {accessToken} from './test_config';
 
-import {getFutureWindows, queueWindows, dedupeWindows, createWindows, removeAllFutureWindows} from '../src/core';
+import initialize, {getFutureWindows, queueWindows, dedupeWindows, createWindows, removeAllFutureWindows} from '../src/core';
 
 describe('core application logic =>', () => {
 
@@ -115,7 +115,7 @@ describe('core application logic =>', () => {
       expect(nextState).to.like([
         {
           "maintenance_window": {
-            "start_time": "2020-01-01T00:00:00-0700",
+            "start_time": "2020-01-01T07:00:00.000Z",
             "end_time": "2020-01-01T09:00:00.000Z",
             "description": "This is a recurring maintenance window",
             "services": [
@@ -415,28 +415,24 @@ describe('core application logic =>', () => {
         ],
         arr2: [
           {
-            "maintenance_window": {
-              "start_time": "2020-01-08T07:00:00.000Z",
-              "end_time": "2020-01-08T09:00:00.000Z",
-              "description": "This is a recurring maintenance window",
-              "services": [
-                "P1FYDYU",
-                "PK2X17C"
-              ],
-              "type": "maintenance_window"
-            }
+            "start_time": "2020-01-08T07:00:00.000Z",
+            "end_time": "2020-01-08T09:00:00.000Z",
+            "description": "This is a recurring maintenance window",
+            "services": [
+              "P1FYDYU",
+              "PK2X17C"
+            ],
+            "type": "maintenance_window"
           },
           {
-            "maintenance_window": {
-              "start_time": "2030-06-14T07:00:00.000Z",
-              "end_time": "2030-01-12T09:00:00.000Z",
-              "description": "This is a recurring maintenance window",
-              "services": [
-                "P1FYDYU",
-                "PK2X17D"
-              ],
-              "type": "maintenance_window"
-            }
+            "start_time": "2030-06-14T07:00:00.000Z",
+            "end_time": "2030-01-12T09:00:00.000Z",
+            "description": "This is a recurring maintenance window",
+            "services": [
+              "P1FYDYU",
+              "PK2X17D"
+            ],
+            "type": "maintenance_window"
           }
         ]
       }
@@ -480,6 +476,20 @@ describe('core application logic =>', () => {
       };
       const nextState = removeAllFutureWindows(state.services, state.apiKey);
       return expect(nextState).to.eventually.equal(204);
+    });
+  });
+
+  describe('initialize =>', () => {
+
+    it('initializes the application logic in an environment with no current windows', () => {
+      process.env.SERVICES = "P1FYDYU,PK2X17C";
+      process.env.START_TIME = "2020-01-01";
+      process.env.INTERVAL = 604800; // one week
+      process.env.DURATION = 3600; // one hour
+      process.env.DESCRIPTION = "This is a maintenance window created during unit testing";
+      process.env.ACCESS_TOKEN = accessToken;
+      process.env.EMAIL = "lucas@pagerduty.com";
+      return expect(initialize()).to.eventually.equal(200);
     });
   });
 });

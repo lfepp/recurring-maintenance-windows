@@ -2,6 +2,8 @@
 
 import rp from 'request-promise';
 
+// TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
+
 // Function to get future maintenance windows
 // TODO handle pagination
 export function getFutureWindows(services, apiKey) {
@@ -24,19 +26,19 @@ export function getFutureWindows(services, apiKey) {
 }
 
 // Function to queue 20 maintenance windows
+// TODO make this a configurable number of queues or base it on the interval/duration
 export function queueWindows(services, startTime, interval, duration, description) {
   let queue = [];
   for(let i=0; i<20; i++) {
-    let endTime = Date.parse(startTime);
-    if(isNaN(endTime)) {
+    startTime = new Date(Date.parse(startTime));
+    if(isNaN(startTime)) {
       throw new Error('Invalid START_TIME date format. Please use ISO 8601 format.');
     }
-    endTime = endTime + duration * 1000;
-    endTime = new Date(endTime).toISOString();
+    let endTime = new Date(startTime.getTime() + duration * 1000);
     queue[i] = {
       maintenance_window: {
-        start_time: startTime,
-        end_time: endTime,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
         description: description,
         services: services,
         type: 'maintenance_window'
@@ -53,7 +55,7 @@ export function queueWindows(services, startTime, interval, duration, descriptio
 export function dedupeWindows(currentWindows, queuedWindows) {
   for(let qw of queuedWindows) {
     for(let cw of currentWindows) {
-      if(qw.maintenance_window.start_time == cw.maintenance_window.start_time && qw.maintenance_window.end_time == cw.maintenance_window.end_time) {
+      if(qw.maintenance_window.start_time == cw.start_time && qw.maintenance_window.end_time == cw.end_time) {
         queuedWindows.splice(queuedWindows.indexOf(qw), 1);
       }
     }
@@ -61,6 +63,7 @@ export function dedupeWindows(currentWindows, queuedWindows) {
   return queuedWindows;
 }
 
+// Function to create maintenance windows
 export function createWindows(windows, apiKey, email) {
   for(let mw of windows) {
     const options = {
@@ -77,7 +80,6 @@ export function createWindows(windows, apiKey, email) {
 
     return rp(options)
       .then((response) => {
-        console.dir(response['maintenance_windows']);
         return response['maintenance_windows'];
       })
       .catch((error) => {
@@ -86,6 +88,7 @@ export function createWindows(windows, apiKey, email) {
   }
 }
 
+// Function to delete one maintenance window
 function deleteWindow(windowId, apiKey) {
   const options = {
     url: 'https://api.pagerduty.com/maintenance_windows/' + windowId,
@@ -105,6 +108,7 @@ function deleteWindow(windowId, apiKey) {
     });
 }
 
+// Function to remove all maintenance windows in the future from given services
 // TODO handle pagination
 // TODO add better error handling
 export function removeAllFutureWindows(services, apiKey) {
@@ -127,6 +131,33 @@ export function removeAllFutureWindows(services, apiKey) {
         }
       }
       return loop(result, apiKey, counter);
+    })
+    .catch((error) => {
+      throw new Error(error);
+    });
+}
+
+// Default function to run everything and create the proper windows
+export default function initialize() {
+  let services = process.env.SERVICES.split(",");
+  return getFutureWindows(services, process.env.ACCESS_TOKEN)
+    .then((result) => {
+      for(let i=0; i<services.length; i++) {
+        services[i] = {
+          "id": services[i],
+          "type": "service_reference"
+        }
+      }
+      const queuedWindows = queueWindows(services, process.env.START_TIME, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
+      const windows = dedupeWindows(result, queuedWindows);
+      return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL)
+        .then((result) => {
+          process.env.START_TIME = windows[windows.length-1].maintenance_window.start_time;
+          return 200;
+        })
+        .catch((error) => {
+          throw new Error(error);
+        });
     })
     .catch((error) => {
       throw new Error(error);
