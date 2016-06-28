@@ -33,7 +33,7 @@ function getFutureWindows(services, apiKey) {
 
   return (0, _requestPromise2.default)(options).then(function (response) {
     console.log('Successfully retrieved maintenance windows:\n');
-    console.dir(JSON.parse(response).maintenance_windows);
+    console.log(JSON.stringify(JSON.parse(response).maintenance_windows));
     return JSON.parse(response).maintenance_windows;
   }).catch(function (error) {
     console.log('Error getting future windows: ' + error);
@@ -64,7 +64,7 @@ function queueWindows(services, startTime, interval, duration, description) {
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
   console.log('Successfully queued windows:\n');
-  console.dir(queue);
+  console.log(JSON.stringify(queue));
   return queue;
 }
 
@@ -123,7 +123,7 @@ function dedupeWindows(currentWindows, queuedWindows) {
   }
 
   console.log('Successfully deduped windows:\n');
-  console.dir(queuedWindows);
+  console.log(JSON.stringify(queuedWindows));
   return queuedWindows;
 }
 
@@ -152,7 +152,7 @@ function createWindows(windows, apiKey, email) {
 
       return (0, _requestPromise2.default)(options).then(function (response) {
         console.log('Successfully created a window:\n');
-        console.dir(response['maintenance_windows']);
+        console.log(JSON.stringify(response['maintenance_windows']));
         return response['maintenance_windows'];
       }).catch(function (error) {
         console.log('Error creating windows: ' + error);
