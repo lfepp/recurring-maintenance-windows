@@ -11,8 +11,9 @@ app.listen(port);
 console.log('Server listening on port ' + port);
 
 app.get('/', function(req, res) {
-  core.initialize();
-  res.sendFile(__dirname + '/dist/index.html');
+  core.default(function() {
+    res.sendFile(__dirname + '/dist/views/index.html');
+  });
 });
 
 module.exports = app;
