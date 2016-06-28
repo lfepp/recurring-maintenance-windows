@@ -163,3 +163,7 @@ export default function initialize() {
       throw new Error(error);
     });
 }
+
+// Immediately invoke initialize
+// FIXME do this without breaking tests
+initialize();
