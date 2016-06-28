@@ -21,6 +21,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // Function to get future maintenance windows
 // TODO handle pagination
 function getFutureWindows(services, apiKey) {
+  console.log('Getting future maintenance windows...');
   var options = {
     url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()),
     method: 'GET',
@@ -31,8 +32,11 @@ function getFutureWindows(services, apiKey) {
   };
 
   return (0, _requestPromise2.default)(options).then(function (response) {
+    console.log('Successfully retrieved maintenance windows:\n');
+    console.dir(JSON.parse(response).maintenance_windows);
     return JSON.parse(response).maintenance_windows;
   }).catch(function (error) {
+    console.log('Error getting future windows: ' + error);
     throw new Error(error);
   });
 }
@@ -40,6 +44,7 @@ function getFutureWindows(services, apiKey) {
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
 function queueWindows(services, startTime, interval, duration, description) {
+  console.log('Queueing windows...');
   var queue = [];
   for (var i = 0; i < 20; i++) {
     startTime = new Date(Date.parse(startTime));
@@ -58,6 +63,8 @@ function queueWindows(services, startTime, interval, duration, description) {
     };
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
+  console.log('Successfully queued windows:\n');
+  console.dir(queue);
   return queue;
 }
 
@@ -65,6 +72,7 @@ function queueWindows(services, startTime, interval, duration, description) {
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
 // TODO add error handling for partially-overlapping windows
 function dedupeWindows(currentWindows, queuedWindows) {
+  console.log('Deduping windows...');
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
@@ -114,11 +122,14 @@ function dedupeWindows(currentWindows, queuedWindows) {
     }
   }
 
+  console.log('Successfully deduped windows:\n');
+  console.dir(queuedWindows);
   return queuedWindows;
 }
 
 // Function to create maintenance windows
 function createWindows(windows, apiKey, email) {
+  console.log('Creating windows...');
   var _iteratorNormalCompletion3 = true;
   var _didIteratorError3 = false;
   var _iteratorError3 = undefined;
@@ -140,8 +151,11 @@ function createWindows(windows, apiKey, email) {
       };
 
       return (0, _requestPromise2.default)(options).then(function (response) {
+        console.log('Successfully created a window:\n');
+        console.dir(response['maintenance_windows']);
         return response['maintenance_windows'];
       }).catch(function (error) {
+        console.log('Error creating windows: ' + error);
         throw new Error(error);
       });
     }
@@ -205,6 +219,7 @@ function removeAllFutureWindows(services, apiKey) {
 
 // Default function to run everything and create the proper windows
 function initialize() {
+  console.log('Initializing application...');
   var services = process.env.SERVICES.split(",");
   return getFutureWindows(services, process.env.ACCESS_TOKEN).then(function (result) {
     for (var i = 0; i < services.length; i++) {
