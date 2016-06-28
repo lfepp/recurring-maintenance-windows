@@ -2,16 +2,6 @@
 
 import rp from 'request-promise';
 
-console.log(process.env);
-console.dir(process.env);
-console.log(process.env.ACCESS_TOKEN);
-console.log(process.env.DESCRIPTION);
-console.log(process.env.DURATION);
-console.log(process.env.INTERVAL);
-console.log(process.env.REQUESTER_EMAIL);
-console.log(process.env.SERVICES);
-console.log(process.env.START_TIME);
-
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
 
 // Function to get future maintenance windows
@@ -173,7 +163,3 @@ export default function initialize() {
       throw new Error(error);
     });
 }
-
-// Immediately invoke initialize
-// FIXME do this without breaking tests
-initialize();

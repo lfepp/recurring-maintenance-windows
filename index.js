@@ -2,6 +2,7 @@
 
 var express = require('express');
 var app = express();
+var core = require(__dirname + '/src/core.js');
 
 app.use(express.static(__dirname + '/dist'));
 
@@ -10,6 +11,7 @@ app.listen(port);
 console.log('Server listening on port ' + port);
 
 app.get('/', function(req, res) {
+  core.initialize();
   res.sendFile(__dirname + '/dist/index.html');
 });
 
