@@ -4,7 +4,8 @@
   "description": "Create recurring maintenance windows within PagerDuty",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --compilers js:babel-core/register --recursive"
+    "test": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --compilers js:babel-core/register --recursive",
+    "start": "./node_modules/.bin/babel-node index.js"
   },
   "repository": {
     "type": "git",
@@ -30,6 +31,7 @@
   },
   "dependencies": {
     "cron": "1.1.0",
+    "express": "4.14.0",
     "request": "2.72.0",
     "request-promise": "3.0.0"
   },
