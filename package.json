@@ -1,6 +1,6 @@
 {
   "name": "recurring-maintenance-windows",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Create recurring maintenance windows within PagerDuty",
   "main": "index.js",
   "scripts": {
