@@ -70940,6 +70940,14 @@ var _requestPromise2 = _interopRequireDefault(_requestPromise);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+console.log(process.env.ACCESS_TOKEN);
+console.log(process.env.DESCRIPTION);
+console.log(process.env.DURATION);
+console.log(process.env.INTERVAL);
+console.log(process.env.REQUESTER_EMAIL);
+console.log(process.env.SERVICES);
+console.log(process.env.START_TIME);
+
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
 
 // Function to get future maintenance windows
