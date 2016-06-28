@@ -2,7 +2,7 @@
 
 var express = require('express');
 var app = express();
-var core = require(__dirname + '/src/core.js');
+var core = require(__dirname + '/src/compiled_core.js');
 
 app.use(express.static(__dirname + '/dist'));
 
