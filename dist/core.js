@@ -70940,6 +70940,8 @@ var _requestPromise2 = _interopRequireDefault(_requestPromise);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+console.log(process.env);
+console.dir(process.env);
 console.log(process.env.ACCESS_TOKEN);
 console.log(process.env.DESCRIPTION);
 console.log(process.env.DURATION);

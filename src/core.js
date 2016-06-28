@@ -2,6 +2,8 @@
 
 import rp from 'request-promise';
 
+console.log(process.env);
+console.dir(process.env);
 console.log(process.env.ACCESS_TOKEN);
 console.log(process.env.DESCRIPTION);
 console.log(process.env.DURATION);
