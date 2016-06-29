@@ -21,7 +21,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // Function to get future maintenance windows
 // TODO handle pagination
 function getFutureWindows(services, apiKey) {
-  console.log('Getting future maintenance windows...');
+  //console.log('Getting future maintenance windows...');
   var options = {
     url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()),
     method: 'GET',
@@ -32,11 +32,10 @@ function getFutureWindows(services, apiKey) {
   };
 
   return (0, _requestPromise2.default)(options).then(function (response) {
-    console.log('Successfully retrieved maintenance windows:\n');
-    console.log(JSON.stringify(JSON.parse(response).maintenance_windows));
+    //console.log(JSON.parse(response).maintenance_windows);
     return JSON.parse(response).maintenance_windows;
   }).catch(function (error) {
-    console.log('Error getting future windows: ' + error);
+    //console.log('Error getting future windows: ' + error);
     throw new Error(error);
   });
 }
@@ -44,7 +43,7 @@ function getFutureWindows(services, apiKey) {
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
 function queueWindows(services, startTime, interval, duration, description) {
-  console.log('Queueing windows...');
+  //console.log('Queueing windows...');
   var queue = [];
   for (var i = 0; i < 20; i++) {
     startTime = new Date(Date.parse(startTime));
@@ -63,8 +62,7 @@ function queueWindows(services, startTime, interval, duration, description) {
     };
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
-  console.log('Successfully queued windows:\n');
-  console.log(JSON.stringify(queue));
+  //console.log(JSON.stringify(queue));
   return queue;
 }
 
@@ -72,7 +70,7 @@ function queueWindows(services, startTime, interval, duration, description) {
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
 // TODO add error handling for partially-overlapping windows
 function dedupeWindows(currentWindows, queuedWindows) {
-  console.log('Deduping windows...');
+  //console.log('Deduping windows...');
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
   var _iteratorError = undefined;
@@ -107,6 +105,7 @@ function dedupeWindows(currentWindows, queuedWindows) {
         }
       }
     }
+    //console.log(queuedWindows);
   } catch (err) {
     _didIteratorError = true;
     _iteratorError = err;
@@ -122,14 +121,12 @@ function dedupeWindows(currentWindows, queuedWindows) {
     }
   }
 
-  console.log('Successfully deduped windows:\n');
-  console.log(JSON.stringify(queuedWindows));
   return queuedWindows;
 }
 
 // Function to create maintenance windows
 function createWindows(windows, apiKey, email) {
-  console.log('Creating windows...');
+  //console.log('Creating windows...');
   var _iteratorNormalCompletion3 = true;
   var _didIteratorError3 = false;
   var _iteratorError3 = undefined;
@@ -151,11 +148,10 @@ function createWindows(windows, apiKey, email) {
       };
 
       return (0, _requestPromise2.default)(options).then(function (response) {
-        console.log('Successfully created a window:\n');
-        console.log(JSON.stringify(response['maintenance_windows']));
+        //console.log(response['maintenance_windows']);
         return response['maintenance_windows'];
       }).catch(function (error) {
-        console.log('Error creating windows: ' + error);
+        //console.log('Error creating windows: ' + error);
         throw new Error(error);
       });
     }
@@ -228,9 +224,15 @@ function initialize() {
         "type": "service_reference"
       };
     }
+    console.log('result of getFutureWindows:');
+    console.log(result);
     var queuedWindows = queueWindows(services, process.env.START_TIME, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
     var windows = dedupeWindows(result, queuedWindows);
+    console.log('queued windows after dedupe:');
+    console.log(windows);
     return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL).then(function (result) {
+      console.log('result of createWindows:');
+      console.log(result);
       process.env.START_TIME = windows[windows.length - 1].maintenance_window.start_time;
       return 200;
     }).catch(function (error) {
