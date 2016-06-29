@@ -7,7 +7,7 @@ import rp from 'request-promise';
 // Function to get future maintenance windows
 // TODO handle pagination
 export function getFutureWindows(services, apiKey) {
-  console.log('Getting future maintenance windows...');
+  //console.log('Getting future maintenance windows...');
   const options = {
     url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()),
     method: 'GET',
@@ -19,11 +19,11 @@ export function getFutureWindows(services, apiKey) {
 
   return rp(options)
     .then((response) => {
-      console.log(JSON.parse(response).maintenance_windows);
+      //console.log(JSON.parse(response).maintenance_windows);
       return JSON.parse(response).maintenance_windows;
     })
     .catch((error) => {
-      console.log('Error getting future windows: ' + error);
+      //console.log('Error getting future windows: ' + error);
       throw new Error(error);
     });
 }
@@ -31,7 +31,7 @@ export function getFutureWindows(services, apiKey) {
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
 export function queueWindows(services, startTime, interval, duration, description) {
-  console.log('Queueing windows...');
+  //console.log('Queueing windows...');
   let queue = [];
   for(let i=0; i<20; i++) {
     startTime = new Date(Date.parse(startTime));
@@ -50,7 +50,7 @@ export function queueWindows(services, startTime, interval, duration, descriptio
     }
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
-  console.log(JSON.stringify(queue));
+  //console.log(JSON.stringify(queue));
   return queue;
 }
 
@@ -58,7 +58,7 @@ export function queueWindows(services, startTime, interval, duration, descriptio
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
 // TODO add error handling for partially-overlapping windows
 export function dedupeWindows(currentWindows, queuedWindows) {
-  console.log('Deduping windows...');
+  //console.log('Deduping windows...');
   for(let qw of queuedWindows) {
     for(let cw of currentWindows) {
       if(qw.maintenance_window.start_time == cw.start_time && qw.maintenance_window.end_time == cw.end_time) {
@@ -66,13 +66,13 @@ export function dedupeWindows(currentWindows, queuedWindows) {
       }
     }
   }
-  console.log(queuedWindows);
+  //console.log(queuedWindows);
   return queuedWindows;
 }
 
 // Function to create maintenance windows
 export function createWindows(windows, apiKey, email) {
-  console.log('Creating windows...');
+  //console.log('Creating windows...');
   for(let mw of windows) {
     const options = {
       url: 'https://api.pagerduty.com/maintenance_windows',
@@ -88,11 +88,11 @@ export function createWindows(windows, apiKey, email) {
 
     return rp(options)
       .then((response) => {
-        console.log(response['maintenance_windows']);
+        //console.log(response['maintenance_windows']);
         return response['maintenance_windows'];
       })
       .catch((error) => {
-        console.log('Error creating windows: ' + error);
+        //console.log('Error creating windows: ' + error);
         throw new Error(error);
       });
   }
