@@ -19,7 +19,7 @@ export function getFutureWindows(services, apiKey) {
 
   return rp(options)
     .then((response) => {
-      console.log(JSON.stringify(JSON.parse(response).maintenance_windows));
+      console.log(JSON.parse(response).maintenance_windows);
       return JSON.parse(response).maintenance_windows;
     })
     .catch((error) => {
@@ -66,7 +66,7 @@ export function dedupeWindows(currentWindows, queuedWindows) {
       }
     }
   }
-  console.log(JSON.stringify(queuedWindows));
+  console.log(queuedWindows);
   return queuedWindows;
 }
 
@@ -88,7 +88,7 @@ export function createWindows(windows, apiKey, email) {
 
     return rp(options)
       .then((response) => {
-        console.log(JSON.stringify(response['maintenance_windows']));
+        console.log(response['maintenance_windows']);
         return response['maintenance_windows'];
       })
       .catch((error) => {
@@ -159,10 +159,16 @@ export default function initialize() {
           "type": "service_reference"
         }
       }
+      console.log('result of getFutureWindows:');
+      console.log(result);
       const queuedWindows = queueWindows(services, process.env.START_TIME, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
       const windows = dedupeWindows(result, queuedWindows);
+      console.log('queued windows after dedupe:');
+      console.log(windows);
       return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL)
         .then((result) => {
+          console.log('result of createWindows:');
+          console.log(result);
           process.env.START_TIME = windows[windows.length-1].maintenance_window.start_time;
           return 200;
         })
