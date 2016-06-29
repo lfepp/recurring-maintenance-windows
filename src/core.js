@@ -19,7 +19,6 @@ export function getFutureWindows(services, apiKey) {
 
   return rp(options)
     .then((response) => {
-      console.log('Successfully retrieved maintenance windows:\n');
       console.log(JSON.stringify(JSON.parse(response).maintenance_windows));
       return JSON.parse(response).maintenance_windows;
     })
@@ -51,7 +50,6 @@ export function queueWindows(services, startTime, interval, duration, descriptio
     }
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
-  console.log('Successfully queued windows:\n');
   console.log(JSON.stringify(queue));
   return queue;
 }
@@ -68,7 +66,6 @@ export function dedupeWindows(currentWindows, queuedWindows) {
       }
     }
   }
-  console.log('Successfully deduped windows:\n');
   console.log(JSON.stringify(queuedWindows));
   return queuedWindows;
 }
@@ -91,7 +88,6 @@ export function createWindows(windows, apiKey, email) {
 
     return rp(options)
       .then((response) => {
-        console.log('Successfully created a window:\n');
         console.log(JSON.stringify(response['maintenance_windows']));
         return response['maintenance_windows'];
       })
