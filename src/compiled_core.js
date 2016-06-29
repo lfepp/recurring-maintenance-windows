@@ -86,7 +86,7 @@ function dedupeWindows(currentWindows, queuedWindows) {
         for (var _iterator2 = currentWindows[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
           var cw = _step2.value;
 
-          if (qw.maintenance_window.start_time == cw.start_time && qw.maintenance_window.end_time == cw.end_time) {
+          if (Date.parse(qw.maintenance_window.start_time) == Date.parse(cw.start_time) && Date.parse(qw.maintenance_window.end_time) == Date.parse(cw.end_time)) {
             queuedWindows.splice(queuedWindows.indexOf(qw), 1);
           }
         }
@@ -148,7 +148,7 @@ function createWindows(windows, apiKey, email) {
       };
 
       return (0, _requestPromise2.default)(options).then(function (response) {
-        console.log(JSON.stringify(response['maintenance_windows']));
+        console.log(JSON.stringify(response));
         return response['maintenance_windows'];
       }).catch(function (error) {
         console.log('Error creating windows: ' + error);

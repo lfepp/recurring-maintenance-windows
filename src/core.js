@@ -61,7 +61,7 @@ export function dedupeWindows(currentWindows, queuedWindows) {
   console.log('Deduping windows...');
   for(let qw of queuedWindows) {
     for(let cw of currentWindows) {
-      if(qw.maintenance_window.start_time == cw.start_time && qw.maintenance_window.end_time == cw.end_time) {
+      if(Date.parse(qw.maintenance_window.start_time) == Date.parse(cw.start_time) && Date.parse(qw.maintenance_window.end_time) == Date.parse(cw.end_time)) {
         queuedWindows.splice(queuedWindows.indexOf(qw), 1);
       }
     }
@@ -88,7 +88,7 @@ export function createWindows(windows, apiKey, email) {
 
     return rp(options)
       .then((response) => {
-        console.log(JSON.stringify(response['maintenance_windows']));
+        console.log(JSON.stringify(response));
         return response['maintenance_windows'];
       })
       .catch((error) => {
