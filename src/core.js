@@ -160,11 +160,11 @@ export default function initialize() {
         }
       }
       console.log('result of getFutureWindows:');
-      console.log(result);
+      console.log(JSON.stringify(result));
       const queuedWindows = queueWindows(services, process.env.START_TIME, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
       const windows = dedupeWindows(result, queuedWindows);
       console.log('queued windows after dedupe:');
-      console.log(windows);
+      console.log(JSON.stringify(windows));
       return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL)
         .then((result) => {
           console.log('all windows created');

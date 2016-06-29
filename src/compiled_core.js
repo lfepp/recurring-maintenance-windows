@@ -225,11 +225,11 @@ function initialize() {
       };
     }
     console.log('result of getFutureWindows:');
-    console.log(result);
+    console.log(JSON.stringify(result));
     var queuedWindows = queueWindows(services, process.env.START_TIME, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
     var windows = dedupeWindows(result, queuedWindows);
     console.log('queued windows after dedupe:');
-    console.log(windows);
+    console.log(JSON.stringify(windows));
     return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL).then(function (result) {
       console.log('all windows created');
       process.env.START_TIME = windows[windows.length - 1].maintenance_window.start_time;
