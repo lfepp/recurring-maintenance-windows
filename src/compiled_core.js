@@ -20,10 +20,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
 
 // Function to get future maintenance windows
-// TODO handle pagination
 function getFutureWindows(services, apiKey) {
+  var runs = arguments.length <= 2 || arguments[2] === undefined ? 1 : arguments[2];
+  var offset = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
+
+  var output = [];
   var options = {
-    url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()),
+    url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()) + '&limit=100&offset=' + offset,
     method: 'GET',
     headers: {
       'Accept': 'application/vnd.pagerduty+json;version=2',
@@ -32,7 +35,14 @@ function getFutureWindows(services, apiKey) {
   };
 
   return (0, _requestPromise2.default)(options).then(function (response) {
-    return JSON.parse(response).maintenance_windows;
+    var res = JSON.parse(response);
+    output.concat(res.maintenance_windows);
+    if (res.more) {
+      return getFutureWindows(services, apiKey, 2, 100 * runs);
+    } else {
+      return output;
+    }
+    // return JSON.parse(response).maintenance_windows;
   }).catch(function (error) {
     console.log('Error getting future windows: ' + error);
     throw new Error(error);
@@ -41,7 +51,6 @@ function getFutureWindows(services, apiKey) {
 
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
-// FIXME the final window is coming in 1 hour behind
 function queueWindows(services, startTime, interval, duration, description) {
   var queue = [];
   for (var i = 0; i < 20; i++) {
@@ -68,6 +77,7 @@ function queueWindows(services, startTime, interval, duration, description) {
 // Function to de-dupe between the current windows in PagerDuty and the 20 queued windows
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
 // TODO add error handling for partially-overlapping windows
+// FIXME runs are not de-duping one after the other
 function dedupeWindows(currentWindows, queuedWindows) {
   var _iteratorNormalCompletion = true;
   var _didIteratorError = false;
@@ -181,8 +191,10 @@ function deleteWindow(windowId, apiKey) {
 // TODO use recursion
 // TODO handle pagination
 // TODO add better error handling
+// FIXME this is not deleting my windows when called in core_spec although it returns 204
 function removeAllFutureWindows(services, apiKey) {
-  var counter = 0;
+  var counter = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
+
   return getFutureWindows(services, apiKey).then(function (result) {
     function loop(services, apiKey, counter) {
       if (counter >= services.length) {
@@ -203,6 +215,7 @@ function removeAllFutureWindows(services, apiKey) {
 }
 
 // Default function to run everything and create the proper windows
+// FIXME the final window is coming in 1 hour behind
 function initialize() {
   console.log('Initializing application...');
   var services = process.env.SERVICES.split(",");

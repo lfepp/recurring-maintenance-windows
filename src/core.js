@@ -5,10 +5,10 @@ import rp from 'request-promise';
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
 
 // Function to get future maintenance windows
-// TODO handle pagination
-export function getFutureWindows(services, apiKey) {
+export function getFutureWindows(services, apiKey, runs=1, offset=0) {
+  let output = [];
   const options = {
-    url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()),
+    url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()) + '&limit=100&offset=' + offset,
     method: 'GET',
     headers: {
       'Accept': 'application/vnd.pagerduty+json;version=2',
@@ -18,7 +18,15 @@ export function getFutureWindows(services, apiKey) {
 
   return rp(options)
     .then((response) => {
-      return JSON.parse(response).maintenance_windows;
+      const res = JSON.parse(response);
+      output.concat(res.maintenance_windows);
+      if(res.more) {
+        return getFutureWindows(services, apiKey, 2, 100 * runs);
+      }
+      else {
+        return output;
+      }
+      // return JSON.parse(response).maintenance_windows;
     })
     .catch((error) => {
       console.log('Error getting future windows: ' + error);
@@ -28,7 +36,6 @@ export function getFutureWindows(services, apiKey) {
 
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
-// FIXME the final window is coming in 1 hour behind
 export function queueWindows(services, startTime, interval, duration, description) {
   let queue = [];
   for(let i=0; i<20; i++) {
@@ -55,6 +62,7 @@ export function queueWindows(services, startTime, interval, duration, descriptio
 // Function to de-dupe between the current windows in PagerDuty and the 20 queued windows
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
 // TODO add error handling for partially-overlapping windows
+// FIXME runs are not de-duping one after the other
 export function dedupeWindows(currentWindows, queuedWindows) {
   for(let qw of queuedWindows) {
     for(let cw of currentWindows) {
@@ -131,8 +139,8 @@ function deleteWindow(windowId, apiKey) {
 // TODO use recursion
 // TODO handle pagination
 // TODO add better error handling
-export function removeAllFutureWindows(services, apiKey) {
-  let counter = 0;
+// FIXME this is not deleting my windows when called in core_spec although it returns 204
+export function removeAllFutureWindows(services, apiKey, counter=0) {
   return getFutureWindows(services, apiKey)
     .then((result) => {
       function loop(services, apiKey, counter) {
@@ -158,6 +166,7 @@ export function removeAllFutureWindows(services, apiKey) {
 }
 
 // Default function to run everything and create the proper windows
+// FIXME the final window is coming in 1 hour behind
 export default function initialize() {
   console.log('Initializing application...');
   let services = process.env.SERVICES.split(",");
