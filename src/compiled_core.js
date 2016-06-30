@@ -41,6 +41,7 @@ function getFutureWindows(services, apiKey) {
 
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
+// FIXME the final window is coming in 1 hour behind
 function queueWindows(services, startTime, interval, duration, description) {
   var queue = [];
   for (var i = 0; i < 20; i++) {
@@ -60,6 +61,7 @@ function queueWindows(services, startTime, interval, duration, description) {
     };
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
+  console.log(JSON.stringify(queue));
   return queue;
 }
 
