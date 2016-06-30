@@ -3,17 +3,72 @@
 import {expect} from 'chai';
 import {accessToken} from './test_config';
 
-import initialize, {getFutureWindows, queueWindows, dedupeWindows, createWindows, removeAllFutureWindows} from '../src/core';
+import initialize, {getFutureWindows, queueWindows, dedupeWindows, createWindow, createWindows, removeAllFutureWindows} from '../src/core';
 
 describe('core application logic =>', () => {
 
-  describe('createWindows =>', () => {
+  describe('createWindow =>', () => {
 
+    // TODO make this test eventually.like instead of fulfilled
     it('creates a maintenance window with valid parameters', () => {
       const state = {
         apiKey: accessToken,
         email: 'lucas@pagerduty.com',
+        maintenanceWindow: {
+          "maintenance_window": {
+            "start_time": "2020-01-01T00:00:00-0700",
+            "end_time": "2020-01-01T09:00:00.000Z",
+            "description": "This is a recurring maintenance window",
+            "services": [
+              {
+                "id": "P1FYDYU",
+                "type": "service_reference"
+              },
+              {
+                "id": "PK2X17C",
+                "type": "service_reference"
+              }
+            ],
+            "type": "maintenance_window"
+          }
+        }
+      };
+      const nextState = createWindow(state.maintenanceWindow, state.apiKey, state.email);
+      return expect(nextState).to.be.fulfilled;
+    });
+
+    it('attempts to create a window with invalid parameters', () => {
+      const state = {
+        apiKey: accessToken,
+        email: 'lucas@pagerduty.com',
         maintenanceWindows: [
+          {
+            "maintenance_window": {
+              "start_time": "2020-01-15T07:00:00.000Z",
+              "end_time": "2020-01-15T09:00:00.000Z",
+              "description": "This is a recurring maintenance window",
+              "services": [
+                "P1FYDYU",
+                "PK2X17C"
+              ],
+              "type": "maintenance_window"
+            }
+          }
+        ]
+      };
+      const nextState = createWindow(state.maintenanceWindows, state.apiKey, state.email);
+      return expect(nextState).to.be.rejectedWith(Error);
+    });
+  });
+
+  // TODO write failure test
+  describe('createWindows =>', () => {
+
+    it('sends an array of valid windows', () => {
+      const state = {
+        apiKey: accessToken,
+        email: 'lucas@pagerduty.com',
+        maintenanceWindow: [
           {
             "maintenance_window": {
               "start_time": "2020-01-01T00:00:00-0700",
@@ -51,32 +106,9 @@ describe('core application logic =>', () => {
             }
           }
         ]
-      };
-      const nextState = createWindows(state.maintenanceWindows, state.apiKey, state.email);
-      return expect(nextState).to.be.fulfilled;
-    });
-
-    it('attempts to create a window with invalid parameters', () => {
-      const state = {
-        apiKey: accessToken,
-        email: 'lucas@pagerduty.com',
-        maintenanceWindows: [
-          {
-            "maintenance_window": {
-              "start_time": "2020-01-15T07:00:00.000Z",
-              "end_time": "2020-01-15T09:00:00.000Z",
-              "description": "This is a recurring maintenance window",
-              "services": [
-                "P1FYDYU",
-                "PK2X17C"
-              ],
-              "type": "maintenance_window"
-            }
-          }
-        ]
-      };
-      const nextState = createWindows(state.maintenanceWindows, state.apiKey, state.email);
-      return expect(nextState).to.be.rejectedWith(Error);
+      }
+      const nextState = createWindows(state.maintenanceWindow, state.apiKey, state.email);
+      expect(nextState).to.eventually.equal(200);
     });
   });
 
@@ -467,7 +499,8 @@ describe('core application logic =>', () => {
   });
 
   // TODO improve tests for this logic
-  describe('removeAllFutureWindows =>', () => {
+  describe('removeAllFutureWindows =>', function() {
+    this.timeout(10000);
 
     it('removes all future maintenance windows', () => {
       const state = {
@@ -479,7 +512,8 @@ describe('core application logic =>', () => {
     });
   });
 
-  describe('initialize =>', () => {
+  describe('initialize =>', function() {
+    this.timeout(10000);
 
     it('initializes the application logic in an environment with no current windows', () => {
       process.env.SERVICES = "P1FYDYU,PK2X17C";

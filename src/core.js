@@ -70,31 +70,46 @@ export function dedupeWindows(currentWindows, queuedWindows) {
   return queuedWindows;
 }
 
-// Function to create maintenance windows
-export function createWindows(windows, apiKey, email) {
+// Function to create a maintenance window
+export function createWindow(maintenanceWindow, apiKey, email) {
   console.log('Creating windows...');
-  for(let mw of windows) {
-    const options = {
-      url: 'https://api.pagerduty.com/maintenance_windows',
-      method: 'POST',
-      headers: {
-        'Accept': 'application/vnd.pagerduty+json;version=2',
-        'Authorization': 'Token token=' + apiKey,
-        'From': email
-      },
-      body: mw,
-      json: true
-    };
+  const options = {
+    url: 'https://api.pagerduty.com/maintenance_windows',
+    method: 'POST',
+    headers: {
+      'Accept': 'application/vnd.pagerduty+json;version=2',
+      'Authorization': 'Token token=' + apiKey,
+      'From': email
+    },
+    body: maintenanceWindow,
+    json: true
+  };
 
-    return rp(options)
+  return rp(options)
+    .then((response) => {
+      console.log(JSON.stringify(response['maintenance_windows']));
+      return response['maintenance_windows'];
+    })
+    .catch((error) => {
+      console.log('Error creating windows: ' + error);
+      throw new Error(error);
+    });
+}
+
+// Function to loop through createWindow for an array of maintenance windows
+export function createWindows(windows, apiKey, email, counter=0) {
+  if(counter >= windows.length) {
+    return 200;
+  }
+  else {
+    return createWindow(windows[counter], apiKey, email)
       .then((response) => {
-        console.log(JSON.stringify(response));
-        return response['maintenance_windows'];
+        counter++;
+        return createWindows(windows, apiKey, email, counter);
       })
       .catch((error) => {
-        console.log('Error creating windows: ' + error);
         throw new Error(error);
-      });
+      })
   }
 }
 
@@ -119,6 +134,7 @@ function deleteWindow(windowId, apiKey) {
 }
 
 // Function to remove all maintenance windows in the future from given services
+// TODO use recursion
 // TODO handle pagination
 // TODO add better error handling
 export function removeAllFutureWindows(services, apiKey) {
