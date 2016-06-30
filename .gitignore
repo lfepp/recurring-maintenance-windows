@@ -14,5 +14,6 @@ coverage
 # vendor modules
 node_modules
 
-# config files
+# secret files
 test/test_config.js
+.env
