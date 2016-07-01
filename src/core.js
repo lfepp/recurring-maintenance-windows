@@ -6,9 +6,7 @@ import fs from 'fs';
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
 
 // Function to get future maintenance windows
-export function getFutureWindows(services, apiKey, runs=1, offset=0) {
-  console.log('running get windows');
-  let output = [];
+export function getFutureWindows(services, apiKey, output=[], offset=0) {
   const options = {
     url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()) + '&limit=100&offset=' + offset,
     method: 'GET',
@@ -21,9 +19,9 @@ export function getFutureWindows(services, apiKey, runs=1, offset=0) {
   return rp(options)
     .then((response) => {
       const res = JSON.parse(response);
-      output.concat(res.maintenance_windows);
+      output = output.concat(res.maintenance_windows);
       if(res.more) {
-        return getFutureWindows(services, apiKey, 2, 100 * runs);
+        return getFutureWindows(services, apiKey, output, offset + 100);
       }
       else {
         return output;
@@ -62,7 +60,7 @@ export function queueWindows(services, startTime, interval, duration, descriptio
 // Function to de-dupe between the current windows in PagerDuty and the 20 queued windows
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
 // TODO add error handling for partially-overlapping windows
-// FIXME runs are not de-duping one after the other
+// FIXME not sure it's deduping properly
 export function dedupeWindows(currentWindows, queuedWindows) {
   for(let qw of queuedWindows) {
     for(let cw of currentWindows) {
@@ -140,7 +138,6 @@ function deleteWindow(windowId, apiKey) {
 // TODO use recursion
 // TODO handle pagination
 // TODO add better error handling
-// FIXME this is not deleting my windows when called in core_spec although it returns 204
 export function removeAllFutureWindows(services, apiKey, counter=0) {
   return getFutureWindows(services, apiKey)
     .then((response) => {

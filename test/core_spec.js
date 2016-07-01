@@ -499,17 +499,18 @@ describe('core application logic =>', () => {
     });
   });
 
-  // TODO improve tests for this logic
   describe('removeAllFutureWindows =>', function() {
-    this.timeout(10000);
+    this.timeout(30000);
 
     it('removes all future maintenance windows', () => {
       const state = {
         services: ['P1FYDYU','PK2X17C'],
         apiKey: accessToken
       };
-      const nextState = removeAllFutureWindows(state.services, state.apiKey);
-      return expect(nextState).to.eventually.equal(204);
+      const nextStateStatusCode = removeAllFutureWindows(state.services, state.apiKey);
+      return expect(nextStateStatusCode).to.eventually.equal(204);
+      const nextState = getFutureWindows(state.services, state.apiKey);
+      return expect(nextState).to.eventually.equal([]);
     });
   });
 
