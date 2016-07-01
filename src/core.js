@@ -1,11 +1,13 @@
 'use strict';
 
 import rp from 'request-promise';
+import fs from 'fs';
 
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
 
 // Function to get future maintenance windows
 export function getFutureWindows(services, apiKey, runs=1, offset=0) {
+  console.log('running get windows');
   let output = [];
   const options = {
     url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()) + '&limit=100&offset=' + offset,
@@ -26,7 +28,6 @@ export function getFutureWindows(services, apiKey, runs=1, offset=0) {
       else {
         return output;
       }
-      // return JSON.parse(response).maintenance_windows;
     })
     .catch((error) => {
       console.log('Error getting future windows: ' + error);
@@ -55,7 +56,6 @@ export function queueWindows(services, startTime, interval, duration, descriptio
     }
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
-  console.log(JSON.stringify(queue));
   return queue;
 }
 
@@ -117,6 +117,7 @@ export function createWindows(windows, apiKey, email, counter=0) {
 
 // Function to delete one maintenance window
 function deleteWindow(windowId, apiKey) {
+  console.log('Deleting: ' + windowId);
   const options = {
     url: 'https://api.pagerduty.com/maintenance_windows/' + windowId,
     method: 'DELETE',
@@ -128,7 +129,7 @@ function deleteWindow(windowId, apiKey) {
 
   return rp(options)
     .then((response) => {
-      return response;
+      console.log('Deleted window successfully');
     })
     .catch((error) => {
       throw new Error(error);
@@ -142,23 +143,23 @@ function deleteWindow(windowId, apiKey) {
 // FIXME this is not deleting my windows when called in core_spec although it returns 204
 export function removeAllFutureWindows(services, apiKey, counter=0) {
   return getFutureWindows(services, apiKey)
-    .then((result) => {
-      function loop(services, apiKey, counter) {
-        if(counter >= services.length) {
+    .then((response) => {
+      function loop(windows, apiKey, counter) {
+        if(counter >= windows.length) {
           return 204;
         }
         else {
-        return deleteWindow(services[counter].id, apiKey)
-          .then((response) => {
-            counter++;
-            return loop(services, apiKey, counter);
-          })
-          .catch((error) => {
-            throw new Error(error);
-          })
+          return deleteWindow(windows[counter].id, apiKey)
+            .then((response) => {
+              counter++;
+              return loop(windows, apiKey, counter);
+            })
+            .catch((error) => {
+              throw new Error(error);
+            })
         }
       }
-      return loop(result, apiKey, counter);
+      return loop(response, apiKey, counter);
     })
     .catch((error) => {
       throw new Error(error);
@@ -168,7 +169,11 @@ export function removeAllFutureWindows(services, apiKey, counter=0) {
 // Default function to run everything and create the proper windows
 // FIXME the final window is coming in 1 hour behind
 export default function initialize() {
-  console.log('Initializing application...');
+  console.log('Initializing application logic...');
+  if (!fs.exists('src/start_time.txt')) {
+    fs.writeFileSync('src/start_time.txt', process.env.START_TIME);
+  }
+  const startTime = fs.readFileSync('src/start_time.txt');
   let services = process.env.SERVICES.split(",");
   return getFutureWindows(services, process.env.ACCESS_TOKEN)
     .then((result) => {
@@ -178,11 +183,11 @@ export default function initialize() {
           "type": "service_reference"
         }
       }
-      const queuedWindows = queueWindows(services, process.env.START_TIME, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
+      const queuedWindows = queueWindows(services, startTime, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
       const windows = dedupeWindows(result, queuedWindows);
       return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL)
         .then((result) => {
-          process.env.START_TIME = windows[windows.length-1].maintenance_window.start_time;
+          fs.writeFileSync('src/start_time.txt', windows[windows.length-1].maintenance_window.start_time);
           return 200;
         })
         .catch((error) => {

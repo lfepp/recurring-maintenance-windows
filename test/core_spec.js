@@ -112,7 +112,8 @@ describe('core application logic =>', () => {
     });
   });
 
-  describe('getFutureWindows =>', () => {
+  describe('getFutureWindows =>', function() {
+    this.timeout(5000);
 
     it('makes a successful request to PagerDuty\'s REST API for future maintenance windows', () => {
       const state = {

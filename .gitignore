@@ -14,6 +14,7 @@ coverage
 # vendor modules
 node_modules
 
-# secret files
+# secret & testing files
 test/test_config.js
 .env
+src/start_time.txt
