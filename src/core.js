@@ -167,10 +167,15 @@ export function removeAllFutureWindows(services, apiKey, counter=0) {
 // FIXME the final window is coming in 1 hour behind
 export default function initialize() {
   console.log('Initializing application logic...');
-  if (!fs.exists('src/start_time.txt')) {
-    fs.writeFileSync('src/start_time.txt', process.env.START_TIME);
+  // Determine whether or not start_time.txt exists
+  try {
+    fs.accessSync('src/start_time.txt');
   }
-  const startTime = fs.readFileSync('src/start_time.txt');
+  catch(error) {
+    fs.writeFileSync('src/start_time.txt', process.env.START_TIME, { "flags": "w" });
+  }
+  const startTime = new Date(Date.parse(fs.readFileSync('src/start_time.txt')));
+  console.log(startTime.toISOString());
   let services = process.env.SERVICES.split(",");
   return getFutureWindows(services, process.env.ACCESS_TOKEN)
     .then((result) => {
@@ -184,7 +189,7 @@ export default function initialize() {
       const windows = dedupeWindows(result, queuedWindows);
       return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL)
         .then((result) => {
-          fs.writeFileSync('src/start_time.txt', windows[windows.length-1].maintenance_window.start_time);
+          fs.writeFileSync('src/start_time.txt', windows[windows.length-1].maintenance_window.start_time, { "flags": "w" });
           return 200;
         })
         .catch((error) => {

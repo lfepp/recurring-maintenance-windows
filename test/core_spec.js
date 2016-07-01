@@ -515,7 +515,7 @@ describe('core application logic =>', () => {
   });
 
   describe('initialize =>', function() {
-    this.timeout(10000);
+    this.timeout(60000);
 
     it('initializes the application logic in an environment with no current windows', () => {
       process.env.SERVICES = "P1FYDYU,PK2X17C";
