@@ -206,10 +206,8 @@ function initialize() {
     _fs2.default.writeFileSync('src/start_time.txt', process.env.START_TIME, { "flags": "w" });
   }
   // Determine start time from file
-  console.log(_fs2.default.readFileSync('src/start_time.txt', 'utf8'));
   var startTimeStr = _fs2.default.readFileSync('src/start_time.txt', 'utf8').replace(/\s/g, '');
   var startTime = new Date(Date.parse(startTimeStr));
-  console.log(startTime);
   var services = process.env.SERVICES.split(",");
   // Get future maintenance windows and format services for REST API
   return getFutureWindows(services, process.env.ACCESS_TOKEN).then(function (result) {

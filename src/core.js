@@ -177,10 +177,8 @@ export default function initialize() {
     fs.writeFileSync('src/start_time.txt', process.env.START_TIME, { "flags": "w" });
   }
   // Determine start time from file
-  console.log(fs.readFileSync('src/start_time.txt', 'utf8'));
   const startTimeStr = fs.readFileSync('src/start_time.txt', 'utf8').replace(/\s/g, '');
   const startTime = new Date(Date.parse(startTimeStr));
-  console.log(startTime);
   let services = process.env.SERVICES.split(",");
   // Get future maintenance windows and format services for REST API
   return getFutureWindows(services, process.env.ACCESS_TOKEN)
