@@ -4,6 +4,7 @@ import rp from 'request-promise';
 import fs from 'fs';
 
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
+// TODO improve efficiency with immutable.js
 
 // Function to get future maintenance windows
 export function getFutureWindows(services, apiKey, output=[], offset=0) {
@@ -28,13 +29,13 @@ export function getFutureWindows(services, apiKey, output=[], offset=0) {
       }
     })
     .catch((error) => {
-      console.log('Error getting future windows: ' + error);
       throw new Error(error);
     });
 }
 
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
+// TODO break into queueWindow function with recursive queueWindows function
 export function queueWindows(services, startTime, interval, duration, description) {
   let queue = [];
   for(let i=0; i<20; i++) {
@@ -59,15 +60,17 @@ export function queueWindows(services, startTime, interval, duration, descriptio
 
 // Function to de-dupe between the current windows in PagerDuty and the 20 queued windows
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
+// TODO improve efficiency by not storing the output in another variable
 // TODO add error handling for partially-overlapping windows
-// FIXME not sure it's deduping properly
 export function dedupeWindows(currentWindows, queuedWindows) {
-  for(let qw of queuedWindows) {
-    for(let cw of currentWindows) {
-      if(Date.parse(qw.maintenance_window.start_time) == Date.parse(cw.start_time) && Date.parse(qw.maintenance_window.end_time) == Date.parse(cw.end_time)) {
-        queuedWindows.splice(queuedWindows.indexOf(qw), 1);
+  for(let i=queuedWindows.length - 1; i>=0; i--) {
+    innerLoop:
+      for(let cw of currentWindows) {
+        if(new Date(Date.parse(queuedWindows[i].maintenance_window.start_time)).getTime() == new Date(Date.parse(cw.start_time)).getTime()) {
+          queuedWindows.splice(i, 1);
+          break innerLoop;
+        }
       }
-    }
   }
   return queuedWindows;
 }
@@ -164,7 +167,6 @@ export function removeAllFutureWindows(services, apiKey, counter=0) {
 }
 
 // Default function to run everything and create the proper windows
-// FIXME the final window is coming in 1 hour behind
 export default function initialize() {
   console.log('Initializing application logic...');
   // Determine whether or not start_time.txt exists
@@ -174,9 +176,13 @@ export default function initialize() {
   catch(error) {
     fs.writeFileSync('src/start_time.txt', process.env.START_TIME, { "flags": "w" });
   }
-  const startTime = new Date(Date.parse(fs.readFileSync('src/start_time.txt')));
-  console.log(startTime.toISOString());
+  // Determine start time from file
+  console.log(fs.readFileSync('src/start_time.txt', 'utf8'));
+  const startTimeStr = fs.readFileSync('src/start_time.txt', 'utf8').replace(/\s/g, '');
+  const startTime = new Date(Date.parse(startTimeStr));
+  console.log(startTime);
   let services = process.env.SERVICES.split(",");
+  // Get future maintenance windows and format services for REST API
   return getFutureWindows(services, process.env.ACCESS_TOKEN)
     .then((result) => {
       for(let i=0; i<services.length; i++) {
@@ -185,16 +191,29 @@ export default function initialize() {
           "type": "service_reference"
         }
       }
+      // Queue 20 maintenance windows
       const queuedWindows = queueWindows(services, startTime, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
+      // Save the new start time
+      const newStartTime = queuedWindows[19].maintenance_window.start_time;
+      // De-duplicate queued windows and current windows
       const windows = dedupeWindows(result, queuedWindows);
-      return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL)
-        .then((result) => {
-          fs.writeFileSync('src/start_time.txt', windows[windows.length-1].maintenance_window.start_time, { "flags": "w" });
-          return 200;
-        })
-        .catch((error) => {
-          throw new Error(error);
-        });
+      // Check to ensure there are windows to create
+      if(windows.length === 0) {
+        // If no windows to create, update start time
+        fs.writeFileSync('src/start_time.txt', newStartTime, { "flags": "w" });
+        return 200;
+      }
+      else {
+        // If there are windows to create, create the windows and set new start time
+        return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL)
+          .then((result) => {
+            fs.writeFileSync('src/start_time.txt', newStartTime, { "flags": "w" });
+            return 200;
+          })
+          .catch((error) => {
+            throw new Error(error);
+          });
+      }
     })
     .catch((error) => {
       throw new Error(error);
