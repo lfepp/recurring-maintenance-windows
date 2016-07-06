@@ -31,6 +31,9 @@
   "buildpacks": [
     {
       "url": "https://github.com/heroku/heroku-buildpack-nodejs#v90"
+    },
+    {
+      "url": "https://github.com/gregburek/heroku-buildpack-postgresql"
     }
   ]
 }
