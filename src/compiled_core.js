@@ -15,16 +15,20 @@ var _requestPromise = require('request-promise');
 
 var _requestPromise2 = _interopRequireDefault(_requestPromise);
 
+var _fs = require('fs');
+
+var _fs2 = _interopRequireDefault(_fs);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // TODO add an auditState function to audit whether there are already enough maintenance windows to not run this
+// TODO improve efficiency with immutable.js
 
 // Function to get future maintenance windows
 function getFutureWindows(services, apiKey) {
-  var runs = arguments.length <= 2 || arguments[2] === undefined ? 1 : arguments[2];
+  var output = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
   var offset = arguments.length <= 3 || arguments[3] === undefined ? 0 : arguments[3];
 
-  var output = [];
   var options = {
     url: 'https://api.pagerduty.com/maintenance_windows?filter=future&service_ids%5B%5D=' + encodeURIComponent(services.toString()) + '&limit=100&offset=' + offset,
     method: 'GET',
@@ -36,21 +40,20 @@ function getFutureWindows(services, apiKey) {
 
   return (0, _requestPromise2.default)(options).then(function (response) {
     var res = JSON.parse(response);
-    output.concat(res.maintenance_windows);
+    output = output.concat(res.maintenance_windows);
     if (res.more) {
-      return getFutureWindows(services, apiKey, 2, 100 * runs);
+      return getFutureWindows(services, apiKey, output, offset + 100);
     } else {
       return output;
     }
-    // return JSON.parse(response).maintenance_windows;
   }).catch(function (error) {
-    console.log('Error getting future windows: ' + error);
     throw new Error(error);
   });
 }
 
 // Function to queue 20 maintenance windows
 // TODO make this a configurable number of queues or base it on the interval/duration
+// TODO break into queueWindow function with recursive queueWindows function
 function queueWindows(services, startTime, interval, duration, description) {
   var queue = [];
   for (var i = 0; i < 20; i++) {
@@ -70,64 +73,43 @@ function queueWindows(services, startTime, interval, duration, description) {
     };
     startTime = new Date(Date.parse(startTime) + interval * 1000).toISOString();
   }
-  console.log(JSON.stringify(queue));
   return queue;
 }
 
 // Function to de-dupe between the current windows in PagerDuty and the 20 queued windows
 // TODO improve efficiency by dropping the older maintenance windows from currentWindows after each loop of queuedWindows
+// TODO improve efficiency by not storing the output in another variable
 // TODO add error handling for partially-overlapping windows
-// FIXME runs are not de-duping one after the other
 function dedupeWindows(currentWindows, queuedWindows) {
-  var _iteratorNormalCompletion = true;
-  var _didIteratorError = false;
-  var _iteratorError = undefined;
+  for (var i = queuedWindows.length - 1; i >= 0; i--) {
+    var _iteratorNormalCompletion = true;
+    var _didIteratorError = false;
+    var _iteratorError = undefined;
 
-  try {
-    for (var _iterator = queuedWindows[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-      var qw = _step.value;
-      var _iteratorNormalCompletion2 = true;
-      var _didIteratorError2 = false;
-      var _iteratorError2 = undefined;
-
-      try {
-        for (var _iterator2 = currentWindows[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var cw = _step2.value;
-
-          if (Date.parse(qw.maintenance_window.start_time) == Date.parse(cw.start_time) && Date.parse(qw.maintenance_window.end_time) == Date.parse(cw.end_time)) {
-            queuedWindows.splice(queuedWindows.indexOf(qw), 1);
-          }
-        }
-      } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion2 && _iterator2.return) {
-            _iterator2.return();
-          }
-        } finally {
-          if (_didIteratorError2) {
-            throw _iteratorError2;
-          }
-        }
-      }
-    }
-  } catch (err) {
-    _didIteratorError = true;
-    _iteratorError = err;
-  } finally {
     try {
-      if (!_iteratorNormalCompletion && _iterator.return) {
-        _iterator.return();
+      innerLoop: for (var _iterator = currentWindows[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var cw = _step.value;
+
+        if (new Date(Date.parse(queuedWindows[i].maintenance_window.start_time)).getTime() == new Date(Date.parse(cw.start_time)).getTime()) {
+          queuedWindows.splice(i, 1);
+          break innerLoop;
+        }
       }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
     } finally {
-      if (_didIteratorError) {
-        throw _iteratorError;
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
       }
     }
   }
-
   return queuedWindows;
 }
 
@@ -171,6 +153,7 @@ function createWindows(windows, apiKey, email) {
 
 // Function to delete one maintenance window
 function deleteWindow(windowId, apiKey) {
+  console.log('Deleting: ' + windowId);
   var options = {
     url: 'https://api.pagerduty.com/maintenance_windows/' + windowId,
     method: 'DELETE',
@@ -181,7 +164,7 @@ function deleteWindow(windowId, apiKey) {
   };
 
   return (0, _requestPromise2.default)(options).then(function (response) {
-    return response;
+    console.log('Deleted window successfully');
   }).catch(function (error) {
     throw new Error(error);
   });
@@ -191,34 +174,44 @@ function deleteWindow(windowId, apiKey) {
 // TODO use recursion
 // TODO handle pagination
 // TODO add better error handling
-// FIXME this is not deleting my windows when called in core_spec although it returns 204
 function removeAllFutureWindows(services, apiKey) {
   var counter = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
 
-  return getFutureWindows(services, apiKey).then(function (result) {
-    function loop(services, apiKey, counter) {
-      if (counter >= services.length) {
+  return getFutureWindows(services, apiKey).then(function (response) {
+    function loop(windows, apiKey, counter) {
+      if (counter >= windows.length) {
         return 204;
       } else {
-        return deleteWindow(services[counter].id, apiKey).then(function (response) {
+        return deleteWindow(windows[counter].id, apiKey).then(function (response) {
           counter++;
-          return loop(services, apiKey, counter);
+          return loop(windows, apiKey, counter);
         }).catch(function (error) {
           throw new Error(error);
         });
       }
     }
-    return loop(result, apiKey, counter);
+    return loop(response, apiKey, counter);
   }).catch(function (error) {
     throw new Error(error);
   });
 }
 
 // Default function to run everything and create the proper windows
-// FIXME the final window is coming in 1 hour behind
 function initialize() {
-  console.log('Initializing application...');
+  console.log('Initializing application logic...');
+  // Determine whether or not start_time.txt exists
+  try {
+    _fs2.default.accessSync('src/start_time.txt');
+  } catch (error) {
+    _fs2.default.writeFileSync('src/start_time.txt', process.env.START_TIME, { "flags": "w" });
+  }
+  // Determine start time from file
+  console.log(_fs2.default.readFileSync('src/start_time.txt', 'utf8'));
+  var startTimeStr = _fs2.default.readFileSync('src/start_time.txt', 'utf8').replace(/\s/g, '');
+  var startTime = new Date(Date.parse(startTimeStr));
+  console.log(startTime);
   var services = process.env.SERVICES.split(",");
+  // Get future maintenance windows and format services for REST API
   return getFutureWindows(services, process.env.ACCESS_TOKEN).then(function (result) {
     for (var i = 0; i < services.length; i++) {
       services[i] = {
@@ -226,14 +219,26 @@ function initialize() {
         "type": "service_reference"
       };
     }
-    var queuedWindows = queueWindows(services, process.env.START_TIME, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
+    // Queue 20 maintenance windows
+    var queuedWindows = queueWindows(services, startTime, process.env.INTERVAL, process.env.DURATION, process.env.DESCRIPTION);
+    // Save the new start time
+    var newStartTime = queuedWindows[19].maintenance_window.start_time;
+    // De-duplicate queued windows and current windows
     var windows = dedupeWindows(result, queuedWindows);
-    return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL).then(function (result) {
-      process.env.START_TIME = windows[windows.length - 1].maintenance_window.start_time;
+    // Check to ensure there are windows to create
+    if (windows.length === 0) {
+      // If no windows to create, update start time
+      _fs2.default.writeFileSync('src/start_time.txt', newStartTime, { "flags": "w" });
       return 200;
-    }).catch(function (error) {
-      throw new Error(error);
-    });
+    } else {
+      // If there are windows to create, create the windows and set new start time
+      return createWindows(windows, process.env.ACCESS_TOKEN, process.env.EMAIL).then(function (result) {
+        _fs2.default.writeFileSync('src/start_time.txt', newStartTime, { "flags": "w" });
+        return 200;
+      }).catch(function (error) {
+        throw new Error(error);
+      });
+    }
   }).catch(function (error) {
     throw new Error(error);
   });
