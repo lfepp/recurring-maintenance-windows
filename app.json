@@ -31,9 +31,29 @@
   "buildpacks": [
     {
       "url": "https://github.com/heroku/heroku-buildpack-nodejs#v90"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
     },
+    "worker": {
+      "quantity": 1,
+      "size": "free"
+    },
+    "clock": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  "addons": [
     {
-      "url": "https://github.com/gregburek/heroku-buildpack-postgresql"
+      "plan": "heroku-postgresql:hobby-dev",
+      "as": "PostgreSQL",
+      "options": {
+        "version": "9.5"
+      }
     }
   ]
 }
